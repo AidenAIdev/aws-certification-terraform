@@ -98,5 +98,14 @@ resource "aws_instance" "ununtu_aws_instance" {
   tags = {
     Name = "aws-course"
   }
-  
+}
+resource "aws_network_interface" "aiden_network_interface" {
+  subnet_id = aws_subnet.public_subnet.id
+  security_groups = [aws_security_group.web_server_sg.id]
+  private_ips = ["10.0.1.50"]
+}
+resource "aws_eip" "aiden_eip" {
+  vpc = true
+  network_interface = aws_network_interface.aiden_network_interface.id
+  associate_with_private_ip = "10.0.1.50"
 }
