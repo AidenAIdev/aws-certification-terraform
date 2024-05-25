@@ -90,15 +90,38 @@ data "aws_ami" "ubuntu" {
   owners = ["099720109477"] # Canonical
 }
 
+// Instance setuo of t2.micro
 resource "aws_instance" "ununtu_aws_instance" {
   ami           = data.aws_ami.ubuntu.id
   instance_type = "t2.micro"
+  network_interface {
+    network_interface_id = aws_network_interface.aiden_network_interface.id
+    device_index = 0
+  }
   subnet_id = aws_subnet.public_subnet.id
   vpc_security_group_ids = [aws_security_group.web_server_sg.id]
+  user_data = <<-EOF
+    #!/bin/bash
+    sudo apt-get update -y
+    sudo apt-get install nginx -y
+    sudo systemctl start nginx
+    sudo systemctl enable nginx
+  EOF
   tags = {
     Name = "aws-course"
   }
 }
+
+output public_aiden_ip {
+  value       = "aws_eip.aiden_eip.public_ip"
+}
+
+output private_aiden_ip {
+  value       = "aws_eip.aiden_eip.private_ip"
+}
+
+// Assignment: cerate network interface and associate with EIP
+
 resource "aws_network_interface" "aiden_network_interface" {
   subnet_id = aws_subnet.public_subnet.id
   security_groups = [aws_security_group.web_server_sg.id]
@@ -106,6 +129,7 @@ resource "aws_network_interface" "aiden_network_interface" {
 }
 resource "aws_eip" "aiden_eip" {
   vpc = true
+  associate_with_private_ip = tolist(aws_network_interface.aiden_network_interface.private_ips)[0]
   network_interface = aws_network_interface.aiden_network_interface.id
-  associate_with_private_ip = "10.0.1.50"
+  Instance = aws_instance.ununtu_aws_instance.id
 }
